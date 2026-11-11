@@ -1,0 +1,22 @@
+# Supabase CLI Konfiguration (nur die für dieses Projekt relevanten Teile).
+project_id = "ayostbgfagrncgfmgyms"
+
+[api]
+# Das Schema review wird absichtlich NICHT exponiert.
+schemas = ["public"]
+
+# Alle Funktionen prüfen ihre Berechtigung selbst (API-Key, Token, Svix-Signatur, Worker-Secret).
+[functions.rv-click]
+verify_jwt = false
+
+[functions.rv-unsubscribe]
+verify_jwt = false
+
+[functions.rv-ingest]
+verify_jwt = false
+
+[functions.rv-resend-webhook]
+verify_jwt = false
+
+[functions.rv-jobs]
+verify_jwt = false

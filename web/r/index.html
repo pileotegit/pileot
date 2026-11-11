@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'">
+<title>Bewertung schreiben</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+  <section id="loading" data-state><p>Einen Moment bitte ...</p></section>
+  <section id="ready" data-state hidden>
+    <h1>Danke für Ihren Besuch<span id="studio"></span>!</h1>
+    <p>Mit einem Klick gelangen Sie zur Bewertungsseite bei Google. Dort können Sie Ihre ehrliche Meinung teilen.</p>
+    <button id="go" type="button">Weiter zu Google</button>
+  </section>
+  <section id="invalid" data-state hidden>
+    <h1>Link nicht mehr gültig</h1>
+    <p>Dieser Link ist abgelaufen oder ungültig. Sie können das Studio direkt in Google Maps suchen und dort bewerten.</p>
+  </section>
+  <section id="error" data-state hidden>
+    <h1>Das hat nicht geklappt</h1>
+    <p>Bitte versuchen Sie es später noch einmal.</p>
+  </section>
+  <noscript><p>Bitte aktivieren Sie JavaScript, um zur Bewertungsseite zu gelangen.</p></noscript>
+</main>
+<script src="../config.js"></script>
+<script src="../common.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

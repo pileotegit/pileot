@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'">
+<title>Abmelden</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+  <section id="loading" data-state><p>Einen Moment bitte ...</p></section>
+  <section id="ready" data-state hidden>
+    <h1>Keine weiteren E-Mails</h1>
+    <p>Möchten Sie keine Bitten um eine Bewertung mehr per E-Mail erhalten?</p>
+    <button id="confirm" type="button">Ja, abmelden</button>
+  </section>
+  <section id="done" data-state hidden>
+    <h1>Sie sind abgemeldet</h1>
+    <p>Sie erhalten von uns keine weiteren E-Mails dieser Art.</p>
+  </section>
+  <section id="invalid" data-state hidden>
+    <h1>Link nicht mehr gültig</h1>
+    <p>Dieser Link ist abgelaufen oder ungültig. Antworten Sie einfach auf die E-Mail mit dem Wunsch, keine Nachrichten mehr zu erhalten.</p>
+  </section>
+  <section id="error" data-state hidden>
+    <h1>Das hat nicht geklappt</h1>
+    <p>Bitte versuchen Sie es später noch einmal oder antworten Sie auf die E-Mail.</p>
+  </section>
+  <noscript><p>Bitte aktivieren Sie JavaScript oder antworten Sie auf die E-Mail mit dem Wunsch, keine Nachrichten mehr zu erhalten.</p></noscript>
+</main>
+<script src="../config.js"></script>
+<script src="../common.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
