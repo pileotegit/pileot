@@ -1,5 +1,5 @@
-// Deutsche E-Mail-Vorlagen, Version v1. Keine Bewertungsfilterung: jede Empfängerin bekommt
-// denselben Link zu Google. Formulierungen bitten um eine ehrliche Bewertung, ohne Anreiz.
+// E-Mail-Vorlagen. Texte kommen pro Kundin aus der Datenbank (Kundenschablone), Layout und
+// Sicherheit (Escaping, keine Header-Injection, ein Link für alle) liegen hier.
 
 export type MailContent = { subject: string; html: string; text: string };
 
@@ -10,12 +10,64 @@ const esc = (s: string) =>
 export const clean = (s: string | null | undefined, max = 80) =>
   (s ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 
-function greeting(firstName: string | null | undefined): string {
-  const n = clean(firstName, 40);
-  return n ? `Hallo ${n},` : 'Hallo,';
+/** Flache Kundenkonfiguration (review.tenant_config bzw. rv_admin_defaults). */
+export type FlatConfig = Record<string, any>;
+
+export type MailConfig = {
+  greeting_named: string;
+  greeting_anonymous: string;
+  signature: string;
+  footer_text: string;
+  unsubscribe_label: string;
+  imprint_text: string;
+  accent_color: string;
+  subject: string;
+  body: string;
+  button_label: string;
+  closing_note: string;
+};
+
+const str = (v: unknown) => (typeof v === 'string' ? v : '');
+
+export function mailConfig(flat: FlatConfig, kind: 'initial' | 'reminder'): MailConfig {
+  return {
+    greeting_named: str(flat.greeting_named),
+    greeting_anonymous: str(flat.greeting_anonymous),
+    signature: str(flat.signature),
+    footer_text: str(flat.footer_text),
+    unsubscribe_label: str(flat.unsubscribe_label),
+    imprint_text: str(flat.imprint_text),
+    accent_color: str(flat.accent_color),
+    subject: str(flat[`${kind}_subject`]),
+    body: str(flat[`${kind}_body`]),
+    button_label: str(flat[`${kind}_button`]),
+    closing_note: str(flat[`${kind}_closing`]),
+  };
 }
 
-function layout(studio: string, bodyHtml: string, unsubUrl: string): string {
+const PLACEHOLDER = /\{\{\s*(studio|vorname)\s*\}\}/g;
+
+/** Platzhalter ersetzen. Unbekannte Platzhalter lehnt die Datenbank beim Speichern ab. */
+export function fill(s: string, vars: { studio: string; vorname?: string }): string {
+  return s.replace(PLACEHOLDER, (_m, k: 'studio' | 'vorname') => vars[k] ?? '');
+}
+
+const normLines = (s: string) => s.replace(/\r\n?/g, '\n').trim();
+const paragraphs = (s: string) => normLines(s).split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+const htmlLines = (s: string) => esc(normLines(s)).replace(/\n/g, '<br>');
+
+function safeColor(c: string): string {
+  return /^#[0-9a-fA-F]{6}$/.test(c) ? c : '#1f2937';
+}
+
+/** Weiß oder Dunkel als Schriftfarbe, je nach Helligkeit der Buttonfarbe. */
+function onColor(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? '#111111' : '#ffffff';
+}
+
+function layout(studio: string, bodyHtml: string, footerHtml: string): string {
   return `<!doctype html>
 <html lang="de">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(studio)}</title></head>
@@ -27,8 +79,7 @@ function layout(studio: string, bodyHtml: string, unsubUrl: string): string {
 ${bodyHtml}
 </td></tr>
 <tr><td style="padding:16px 28px 28px 28px;font-size:12px;line-height:1.5;color:#777;border-top:1px solid #eee;">
-Sie erhalten diese Nachricht im Zusammenhang mit Ihrem Termin bei ${esc(studio)}.
-<a href="${esc(unsubUrl)}" style="color:#777;">Keine weiteren E-Mails dieser Art erhalten</a>.
+${footerHtml}
 </td></tr>
 </table>
 </td></tr>
@@ -37,86 +88,60 @@ Sie erhalten diese Nachricht im Zusammenhang mit Ihrem Termin bei ${esc(studio)}
 </html>`;
 }
 
-function button(url: string, label: string): string {
+function button(url: string, label: string, color: string): string {
   return `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;"><tr>
-<td style="background:#1f2937;border-radius:6px;"><a href="${esc(url)}" style="display:inline-block;padding:12px 22px;color:#ffffff;text-decoration:none;font-weight:bold;">${esc(label)}</a></td>
+<td style="background:${color};border-radius:6px;"><a href="${esc(url)}" style="display:inline-block;padding:12px 22px;color:${onColor(color)};text-decoration:none;font-weight:bold;">${esc(label)}</a></td>
 </tr></table>`;
 }
 
+/**
+ * Bewertungsanfrage oder Erinnerung aus der Kundenkonfiguration. Jede Empfängerin bekommt
+ * denselben Google-Link (kein Review-Gating). Alle Texte werden escaped.
+ */
 export function renderRequest(
   kind: 'initial' | 'reminder',
-  p: { studio: string; firstName?: string | null; clickUrl: string; unsubUrl: string },
+  p: { studio: string; firstName?: string | null; clickUrl: string; unsubUrl: string; config: FlatConfig },
 ): MailContent {
+  const c = mailConfig(p.config, kind);
   const studio = clean(p.studio, 100);
-  const hello = greeting(p.firstName);
+  const firstName = clean(p.firstName, 40);
+  const vars = { studio, vorname: firstName };
+  const f = (s: string) => fill(s, vars);
 
-  if (kind === 'initial') {
-    const subject = `Wie war Ihr Termin bei ${studio}?`;
-    const lines = [
-      `vielen Dank für Ihren Besuch bei ${studio}.`,
-      'Wenn Sie einen Moment Zeit haben, freuen wir uns über Ihre ehrliche Bewertung bei Google. Sie hilft anderen bei der Entscheidung und uns, besser zu werden.',
-    ];
-    const html = layout(
-      studio,
-      `<p style="margin:0 0 14px 0;">${esc(hello)}</p>
-<p style="margin:0 0 14px 0;">${esc(lines[0])}</p>
-<p style="margin:0 0 14px 0;">${esc(lines[1])}</p>
-${button(p.clickUrl, 'Bewertung bei Google schreiben')}
-<p style="margin:0 0 4px 0;">Herzliche Grüße</p>
-<p style="margin:0;">${esc(studio)}</p>`,
-      p.unsubUrl,
-    );
-    const text = `${hello}
+  const hello = clean(firstName ? f(c.greeting_named) : f(c.greeting_anonymous), 120) || 'Hallo,';
+  const subject = clean(f(c.subject), 150);
+  const body = paragraphs(f(c.body));
+  const closing = paragraphs(f(c.closing_note));
+  const signature = normLines(f(c.signature));
+  const footer = clean(f(c.footer_text), 300);
+  const unsubLabel = clean(f(c.unsubscribe_label), 100) || 'Abmelden';
+  const imprint = normLines(f(c.imprint_text));
+  const buttonLabel = clean(f(c.button_label), 60) || 'Bewertung schreiben';
+  const color = safeColor(c.accent_color);
 
-${lines[0]}
+  const P = (inner: string) => `<p style="margin:0 0 14px 0;">${inner}</p>`;
+  const bodyHtml = [
+    P(esc(hello)),
+    ...body.map((x) => P(htmlLines(x))),
+    button(p.clickUrl, buttonLabel, color),
+    ...closing.map((x) => P(htmlLines(x))),
+    `<p style="margin:0;">${htmlLines(signature)}</p>`,
+  ].join('\n');
+  const footerHtml = `${esc(footer)}
+<a href="${esc(p.unsubUrl)}" style="color:#777;">${esc(unsubLabel)}</a>.${
+    imprint ? `\n<br><br><span style="color:#999;">${htmlLines(imprint)}</span>` : ''
+  }`;
 
-${lines[1]}
+  const text = [
+    hello,
+    ...body,
+    `${buttonLabel}:\n${p.clickUrl}`,
+    ...closing,
+    signature,
+    `--\n${footer}\n${unsubLabel}: ${p.unsubUrl}${imprint ? `\n\n${imprint}` : ''}`,
+  ].join('\n\n') + '\n';
 
-Bewertung bei Google schreiben:
-${p.clickUrl}
-
-Herzliche Grüße
-${studio}
-
---
-Sie erhalten diese Nachricht im Zusammenhang mit Ihrem Termin bei ${studio}.
-Keine weiteren E-Mails dieser Art erhalten: ${p.unsubUrl}
-`;
-    return { subject, html, text };
-  }
-
-  const subject = `Kurze Erinnerung: Ihre Meinung zu ${studio}`;
-  const lines = [
-    `vor ein paar Tagen waren Sie bei ${studio}. Falls Sie es noch nicht geschafft haben: Wir freuen uns weiterhin über Ihre ehrliche Bewertung bei Google.`,
-    'Das ist unsere letzte Nachricht dazu.',
-  ];
-  const html = layout(
-    studio,
-    `<p style="margin:0 0 14px 0;">${esc(hello)}</p>
-<p style="margin:0 0 14px 0;">${esc(lines[0])}</p>
-${button(p.clickUrl, 'Bewertung bei Google schreiben')}
-<p style="margin:0 0 14px 0;">${esc(lines[1])}</p>
-<p style="margin:0 0 4px 0;">Herzliche Grüße</p>
-<p style="margin:0;">${esc(studio)}</p>`,
-    p.unsubUrl,
-  );
-  const text = `${hello}
-
-${lines[0]}
-
-Bewertung bei Google schreiben:
-${p.clickUrl}
-
-${lines[1]}
-
-Herzliche Grüße
-${studio}
-
---
-Sie erhalten diese Nachricht im Zusammenhang mit Ihrem Termin bei ${studio}.
-Keine weiteren E-Mails dieser Art erhalten: ${p.unsubUrl}
-`;
-  return { subject, html, text };
+  return { subject, html: layout(studio, bodyHtml, footerHtml), text };
 }
 
 const fmtDate = (d: string) => {

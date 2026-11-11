@@ -15,6 +15,8 @@ export type Env = {
   RESEND_API_KEY?: string;
   RESEND_WEBHOOK_SECRET?: string;
   WORKER_SECRET?: string;
+  /** Passwort des Admin-Formulars (rv-admin), mindestens 32 Zeichen */
+  ADMIN_SECRET?: string;
   OPS_ALERT_EMAIL?: string;
   OPS_SENDER?: string;
   GOOGLE_CLIENT_ID?: string;

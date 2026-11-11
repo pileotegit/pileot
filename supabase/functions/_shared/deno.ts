@@ -19,7 +19,7 @@ export function postgrestRpc(url: string, key: string): Rpc {
       signal: AbortSignal.timeout(20_000),
     });
     const textBody = await res.text();
-    if (!res.ok) throw new Error(`rpc ${fn} ${res.status}: ${textBody.slice(0, 300)}`);
+    if (!res.ok) throw new Error(`rpc ${fn} ${res.status}: ${textBody.slice(0, 1000)}`);
     return textBody ? JSON.parse(textBody) : null;
   };
 }
@@ -34,6 +34,7 @@ export function denoDeps(): Deps {
     RESEND_API_KEY: Deno.env.get('RESEND_API_KEY'),
     RESEND_WEBHOOK_SECRET: Deno.env.get('RESEND_WEBHOOK_SECRET'),
     WORKER_SECRET: Deno.env.get('WORKER_SECRET'),
+    ADMIN_SECRET: Deno.env.get('ADMIN_SECRET'),
     OPS_ALERT_EMAIL: Deno.env.get('OPS_ALERT_EMAIL'),
     OPS_SENDER: Deno.env.get('OPS_SENDER'),
     GOOGLE_CLIENT_ID: Deno.env.get('GOOGLE_CLIENT_ID'),

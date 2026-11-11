@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.rv-jobs]
 verify_jwt = false
+
+[functions.rv-admin]
+verify_jwt = false

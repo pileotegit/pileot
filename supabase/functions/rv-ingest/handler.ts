@@ -15,9 +15,18 @@
 // Der Mandant wird ausschließlich aus dem Key abgeleitet.
 
 import type { Deps } from '../_shared/types.ts';
-import { json, readBody, safeJson } from '../_shared/http.ts';
+import { corsHeaders, json, readBody, safeJson } from '../_shared/http.ts';
 
 export async function handler(req: Request, deps: Deps): Promise<Response> {
+  // CORS nur für das Eintragsformular (web/eintragen) auf den freigegebenen Origins.
+  const cors = corsHeaders(req, deps.env, 'content-type, authorization');
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const res = await inner(req, deps);
+  for (const [k, v] of Object.entries(cors)) res.headers.set(k, v);
+  return res;
+}
+
+async function inner(req: Request, deps: Deps): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, { allow: 'POST' });
 
   const auth = req.headers.get('authorization') ?? '';

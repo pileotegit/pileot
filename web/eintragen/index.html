@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'">
+<title>Termin eintragen</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="eintragen.css">
+</head>
+<body>
+<main>
+  <section id="nokey" data-state hidden>
+    <h1>Zugang fehlt</h1>
+    <p>Bitte den vollständigen Link verwenden, den Sie von PILEOT bekommen haben.</p>
+  </section>
+  <form id="form" data-state hidden autocomplete="off" novalidate>
+    <h1>Abgeschlossenen Termin eintragen</h1>
+    <p class="muted">Die Kundin bekommt danach eine E-Mail mit der Bitte um eine Google-Bewertung, frühestens zum eingestellten Zeitpunkt.</p>
+    <label>E-Mail-Adresse der Kundin <span class="req">*</span>
+      <input id="email" type="email" required maxlength="254" inputmode="email">
+    </label>
+    <label>Vorname (optional)
+      <input id="firstName" type="text" maxlength="40">
+    </label>
+    <label>Termin beendet am
+      <input id="completedAt" type="datetime-local">
+    </label>
+    <label class="check">
+      <input id="consent" type="checkbox">
+      <span>Die Kundin hat ausdrücklich zugestimmt, nach dem Termin per E-Mail um eine Bewertung gebeten zu werden.</span>
+    </label>
+    <button id="submit" type="submit">Eintragen</button>
+    <p id="result" class="result" role="status"></p>
+  </form>
+</main>
+<script src="../config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

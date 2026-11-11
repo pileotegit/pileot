@@ -18,7 +18,7 @@ npx --yes supabase@latest link --project-ref "$REF" --password "$SUPABASE_DB_PAS
 npx --yes supabase@latest db push --password "$SUPABASE_DB_PASSWORD"
 
 echo "3/3 Edge Functions"
-for f in rv-ingest rv-jobs rv-click rv-unsubscribe rv-resend-webhook; do
+for f in rv-ingest rv-jobs rv-click rv-unsubscribe rv-resend-webhook rv-admin; do
   npx --yes supabase@latest functions deploy "$f" --project-ref "$REF" --no-verify-jwt
 done
 echo "Fertig. Globaler Versand bleibt pausiert, bis rv_set_global_send_paused(false) aufgerufen wird."

@@ -26,13 +26,20 @@ Danach prüfen: Dashboard > Database > Schemas: `review` existiert. API > Expose
 
 Dashboard > Edge Functions > Secrets (oder `supabase secrets set NAME=wert`). Werte siehe `.env.example`:
 `CLICK_PAGE_URL`, `UNSUB_PAGE_URL`, `ALLOWED_ORIGINS`, `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`,
-`WORKER_SECRET`, `OPS_ALERT_EMAIL`, `OPS_SENDER`.
+`WORKER_SECRET`, `ADMIN_SECRET`, `OPS_ALERT_EMAIL`, `OPS_SENDER`.
 
 ## 4. Statische Seiten
 
 1. In `web/config.js` steht `apiBase: 'https://ayostbgfagrncgfmgyms.supabase.co/functions/v1'` (passt bereits).
-2. Ordner `web/` auf `link.pileot.de` veröffentlichen (HTTPS Pflicht).
-3. Prüfen: `https://link.pileot.de/r/` zeigt "Link nicht mehr gültig" (ohne Token korrekt).
+2. Ordner `web/` als statisches Projekt auf Vercel veröffentlichen (Root Directory `web`, kein Build).
+   Eigene Domain ist optional; die `*.vercel.app`-Adresse reicht.
+3. Diese Adresse in `CLICK_PAGE_URL`, `UNSUB_PAGE_URL` und `ALLOWED_ORIGINS` eintragen.
+4. Prüfen: `<adresse>/r/` zeigt "Link nicht mehr gültig" (ohne Token korrekt), `<adresse>/admin/` zeigt die Anmeldung.
+
+Seiten:
+- `/admin/`: Kundenverwaltung (Passwort = `ADMIN_SECRET`)
+- `/eintragen/#k=rvk_...`: Eintragsformular für das Studio (Link erzeugt die Kundenverwaltung)
+- `/r/` und `/abmelden/`: Ziel der Links in den Mails
 
 ## 5. Resend-Webhook
 
@@ -41,28 +48,23 @@ Resend > Webhooks > Add Endpoint:
 - Events: `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`, `email.suppressed`
 - Signing Secret kopieren und als `RESEND_WEBHOOK_SECRET` setzen.
 
-## 6. Mandant anlegen (sicher voreingestellt: pausiert, Testmodus)
+## 6. Kundin anlegen (Kundenverwaltung `/admin/`)
 
-```sql
-select public.rv_setup_tenant(
-  'Studio Name',                       -- Mandant
-  'Studio Name',                       -- Standort (erscheint in Mail und Seite)
-  'https://g.page/r/XXXX/review',      -- Google-Bewertungslink aus dem Unternehmensprofil
-  'Studio Name',                       -- Absendername
-  'studio-name@mail.pileot.de',        -- Absenderadresse (verifizierte Domain)
-  'inhaberin@studio.de',               -- Antworten gehen an die Inhaberin
-  'inhaberin@studio.de',               -- Empfängerin Wochenbericht
-  'Europe/Berlin',
-  array['test1@...', 'test2@...']      -- Testadressen
-);
--- liefert tenant_id und location_id
+1. Anmelden mit `ADMIN_SECRET`.
+2. "Neue Kundin": Pflichtfelder (Stern) ausfüllen, Texte anpassen, rechts die Mail live prüfen. Speichern.
+   Neue Kundinnen sind immer pausiert und im Testmodus.
+3. Testadressen eintragen (nur diese bekommen im Testmodus echte Mails).
+4. "Neuen Schlüssel erzeugen": Schlüssel und Link zum Eintragsformular erscheinen genau einmal.
+   Den Link bekommt das Studio. Alternativ den Schlüssel in n8n als Credential
+   "PILEOT Studio Integration Key" für Workflow A oder in einer Terminsoftware verwenden.
+5. Ein verlorener oder weitergegebener Schlüssel wird in der Liste widerrufen, danach neuen erzeugen.
 
-select public.rv_create_integration('<tenant_id>', '<location_id>', 'studio-formular');
--- liefert rvk_... genau einmal. In n8n als Credential "PILEOT Studio Integration Key"
--- (Header Auth, Name Authorization, Value "Bearer rvk_...") speichern. Nirgends sonst ablegen.
-```
+Alles Kundenspezifische (Namen, Adressen, Link, Empfängerin, Versandzeiten, Texte, Impressum, Farbe) liegt in
+der Datenbank. Neue Kundin = Formular ausfüllen, kein Code. Platzhalter in Texten: `{{studio}}`, in der
+Anrede zusätzlich `{{vorname}}`. Erlaubte Bewertungslinks: nur HTTPS auf `g.page`, `search.google.com`,
+`www.google.com`, `maps.app.goo.gl`, `g.co`.
 
-Erlaubte Bewertungslinks: nur HTTPS auf `g.page`, `search.google.com`, `www.google.com`, `maps.app.goo.gl`, `g.co`.
+Per SQL geht es weiterhin mit `public.rv_setup_tenant(...)` und `public.rv_admin_save_tenant(null, '{...}')`.
 
 ## 7. n8n
 
@@ -73,26 +75,27 @@ Erlaubte Bewertungslinks: nur HTTPS auf `g.page`, `search.google.com`, `www.goog
 
 ## 8. Testlauf (Testmodus)
 
-```sql
-select public.rv_set_tenant_status('<tenant_id>', 'active');
-select public.rv_set_global_send_paused(false);
-```
-Über das Formular einen Termin mit einer Testadresse eintragen. Zum Beschleunigen:
-```sql
-update review.send_jobs set due_at = now() where status = 'queued';
-```
-Nach dem nächsten B-Lauf (Viertelstunde) kommt die Mail. Prüfen: Button, Zwischenseite, Weiterleitung zu
-Google, Abmeldung, Wochenbericht-Vorschau:
-```sql
-select public.rv_weekly_report_preview('<tenant_id>', date_trunc('week', now())::date);
-```
-Eine Nicht-Testadresse im Formular erzeugt im Testmodus nur einen `dry_run`, keine Mail.
+1. Kundenverwaltung: "Testbetrieb starten" (aktiv, Testmodus bleibt an).
+2. Einmalig global freigeben:
+   ```sql
+   select public.rv_set_global_send_paused(false);
+   ```
+3. Im Eintragsformular einen Termin mit einer Testadresse eintragen. Zum Beschleunigen:
+   ```sql
+   update review.send_jobs set due_at = now() where status = 'queued';
+   ```
+4. Nach dem nächsten B-Lauf (Viertelstunde) kommt die Mail. Prüfen: Button, Zwischenseite, Weiterleitung zu
+   Google, Abmeldung, Wochenbericht-Vorschau:
+   ```sql
+   select public.rv_weekly_report_preview('<tenant_id>', date_trunc('week', now())::date);
+   ```
+Eine Nicht-Testadresse erzeugt im Testmodus nur einen `dry_run`, keine Mail.
 
 ## 9. Livegang (erst nach geklärter Versandgrundlage)
 
-```sql
-select public.rv_set_test_mode('<tenant_id>', false);
-```
+Kundenverwaltung > Status > "Livegang": Kundennamen eintippen, "Live schalten". Das System verweigert den
+Livegang, solange das Impressum fehlt oder noch keine Testmail tatsächlich versendet wurde.
+Zurück in den Testmodus: "Testmodus wieder an".
 
 ## Betrieb
 

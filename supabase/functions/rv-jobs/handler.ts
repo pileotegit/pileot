@@ -26,6 +26,8 @@ function linkUrl(base: string, token: string): string {
 export async function runSend(deps: Deps, worker: string) {
   const started = deps.now().getTime();
   const summary = { claimed: 0, sent: 0, skipped: 0, transient: 0, permanent: 0, unknown: 0, config_error: 0 };
+  // Kundenkonfiguration (Texte, Gestaltung) einmal pro Kundin und Lauf laden.
+  const configs = new Map<string, any>();
 
   for (let batch = 0; batch < MAX_BATCHES; batch++) {
     if (deps.now().getTime() - started > TIME_BUDGET_MS) break;
@@ -34,6 +36,14 @@ export async function runSend(deps: Deps, worker: string) {
     summary.claimed += jobs.length;
 
     for (const j of jobs) {
+      // Vor rv_mark_job_sending laden: schlägt das fehl, bricht der Lauf ab und die Leases
+      // laufen ab, die Jobs kommen ohne Doppelversand zurück in die Queue.
+      let config = configs.get(j.tenant_id);
+      if (!config) {
+        config = await deps.rpc('rv_get_mail_config', { p_tenant_id: j.tenant_id });
+        if (!config) throw new Error('mail_config_missing');
+        configs.set(j.tenant_id, config);
+      }
       const mark = await deps.rpc('rv_mark_job_sending', { p_job_id: j.job_id, p_worker: worker });
       if (!mark?.ok) {
         summary.skipped++;
@@ -47,6 +57,7 @@ export async function runSend(deps: Deps, worker: string) {
         firstName: j.first_name,
         clickUrl,
         unsubUrl: unsubPage,
+        config,
       });
       const result = await sendMail(
         deps,

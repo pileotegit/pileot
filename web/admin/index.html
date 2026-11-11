@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'">
+<title>PILEOT Review: Kunden</title>
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header>
+  <strong>PILEOT Review</strong> <span class="muted">Kundenverwaltung</span>
+  <span id="who" class="right"></span>
+</header>
+
+<section id="login" class="card narrow">
+  <h1>Anmelden</h1>
+  <p class="muted">Admin-Passwort (Supabase-Secret <code>ADMIN_SECRET</code>). Es wird nur im Speicher dieses Tabs gehalten.</p>
+  <label>Admin-Passwort <input id="secret" type="password" autocomplete="current-password"></label>
+  <button id="loginBtn" type="button">Anmelden</button>
+  <p id="loginMsg" class="msg"></p>
+</section>
+
+<div id="app" hidden>
+  <section class="card bar">
+    <label class="inline">Kundin
+      <select id="tenantSelect"></select>
+    </label>
+    <button id="newBtn" type="button" class="secondary">Neue Kundin</button>
+    <span id="globalMsg" class="msg"></span>
+  </section>
+
+  <div class="cols">
+    <div class="col-form">
+      <section id="statusCard" class="card" hidden>
+        <h2>Status</h2>
+        <p id="statusLine"></p>
+        <div class="row">
+          <button id="pauseBtn" type="button" class="secondary">Pausieren</button>
+          <button id="testRunBtn" type="button" class="secondary">Testbetrieb starten</button>
+          <button id="testOnBtn" type="button" class="secondary">Testmodus wieder an</button>
+        </div>
+        <details>
+          <summary>Livegang (echte Kundinnen bekommen Mails)</summary>
+          <p class="muted">Voraussetzungen: Impressum ausgefüllt, mindestens eine Testmail tatsächlich versendet. Zur Bestätigung den Kundennamen exakt eintippen.</p>
+          <label>Kundenname zur Bestätigung <input id="confirmName" type="text" autocomplete="off"></label>
+          <button id="goLiveBtn" type="button" class="danger">Live schalten</button>
+          <p id="goLiveMsg" class="msg"></p>
+        </details>
+      </section>
+
+      <section id="keysCard" class="card" hidden>
+        <h2>Zugang für das Studio</h2>
+        <p class="muted">Ein Schlüssel erlaubt nur das Eintragen abgeschlossener Termine für diese Kundin. Er wird genau einmal angezeigt.</p>
+        <ul id="keyList" class="plain"></ul>
+        <button id="keyBtn" type="button" class="secondary">Neuen Schlüssel erzeugen</button>
+        <div id="keyOut" hidden>
+          <p><strong>Schlüssel (jetzt sicher ablegen):</strong></p>
+          <code id="keyValue" class="block"></code>
+          <p><strong>Link zum Eintragsformular für das Studio:</strong></p>
+          <code id="entryLink" class="block"></code>
+        </div>
+      </section>
+
+      <form id="form" class="card" autocomplete="off" novalidate>
+        <h2 id="formTitle">Neue Kundin</h2>
+        <div id="fields"></div>
+        <div class="row sticky">
+          <button id="saveBtn" type="submit">Speichern</button>
+          <span id="saveMsg" class="msg"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-preview">
+      <section class="card">
+        <h2>Vorschau</h2>
+        <div class="tabs">
+          <button type="button" class="tab active" data-kind="initial">Erste Mail</button>
+          <button type="button" class="tab" data-kind="reminder">Erinnerung</button>
+        </div>
+        <dl class="meta">
+          <dt>Von</dt><dd id="pvFrom"></dd>
+          <dt>Antwort an</dt><dd id="pvReply"></dd>
+          <dt>Betreff</dt><dd id="pvSubject"></dd>
+          <dt>Ohne Vorname</dt><dd id="pvSubject2" class="muted"></dd>
+        </dl>
+        <iframe id="pvFrame" title="Vorschau der E-Mail" sandbox=""></iframe>
+        <p class="muted">Beispielkundin "Anna". Links in der Vorschau sind Platzhalter.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="../config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

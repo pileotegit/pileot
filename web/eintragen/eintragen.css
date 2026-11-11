@@ -1,0 +1,5 @@
+label{display:block;margin:0 0 14px;font-weight:bold;font-size:14px}
+input[type=email],input[type=text],input[type=datetime-local]{display:block;width:100%;margin-top:5px;font:inherit;font-weight:normal;padding:10px;border:1px solid #d1d5db;border-radius:6px}
+label.check{display:flex;gap:10px;align-items:flex-start;font-weight:normal;line-height:1.45}
+label.check input{margin-top:3px;width:18px;height:18px;flex:none}
+.req{color:#b91c1c}.result{margin-top:14px;font-weight:bold}.result.ok{color:#047857}.result.err{color:#b91c1c}

@@ -81,3 +81,24 @@ fehlender Funktionsumfang.
 - Zustand in n8n-Variablen oder Data Tables: nicht transaktional, nicht testbar.
 - Tabellen im Schema `public` mit RLS-Policies: ein Policy-Fehler wäre ein Datenleck.
 - Bewertungsfilter ("nur bei guter Stimmung zu Google"): verstößt gegen Googles Richtlinien.
+
+## 15. Kundenschablone in der Datenbank
+
+Alle kundenspezifischen Angaben (Namen, Adressen, Google-Link, Empfängerin, Versandregeln, Texte, Impressum,
+Buttonfarbe) liegen in `tenant_settings` und `message_templates` und werden über `rv-admin` gepflegt. Texte sind
+Klartext mit zwei erlaubten Platzhaltern (`{{studio}}`, `{{vorname}}` nur in der Anrede), werden beim Speichern
+validiert und beim Rendern immer escaped. Kein HTML von Kundenseite, damit keine Injektion und kein kaputtes
+Layout möglich ist. Begründung: eine neue Kundin darf keinen Code und kein Deployment brauchen.
+
+## 16. Livegang nur mit Sperre
+
+`rv_admin_go_live` schaltet Testmodus aus und Mandant aktiv, aber nur mit exakt eingetipptem Kundennamen,
+hinterlegtem Impressum und mindestens einer tatsächlich versendeten Testmail. `set-status active` ist ohne
+Testmodus gesperrt. Begründung: der riskanteste Schritt (echte Kundinnen) soll nicht versehentlich passieren.
+
+## 17. Eintragsformular statt n8n-Formular pro Kundin
+
+`web/eintragen` ruft `rv-ingest` direkt mit dem Integrationsschlüssel aus dem Linkanker (`#k=`), der nicht an
+den Webserver geht. So braucht nicht jede Kundin einen eigenen n8n-Workflow. Restrisiko: der Link steht im
+Browserverlauf des Studios; der Schlüssel erlaubt nur das Eintragen für diese Kundin und ist widerrufbar.
+Workflow A bleibt als Alternative.

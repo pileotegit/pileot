@@ -19,7 +19,7 @@ Sprache: Deutsch (Du). Antwort zuerst, kurz, keine Gedankenstriche, keine Emojis
 - `tests/db`: Tests gegen echtes Postgres 16 (`scripts/db-test.sh` startet ein Wegwerf-Cluster)
 - `docs/adr`: Architekturentscheidungen
 - `supabase/functions`: Edge Functions (Handler mit injizierten Abhängigkeiten, `index.ts` nur Deno-Start)
-- `web/`: statische Klick- und Abmeldeseite
+- `web/`: statische Seiten (Kundenverwaltung, Eintragsformular, Klick, Abmeldung)
 - `n8n/`: Workflow-IDs, Credentials, SDK-Quelltexte (n8n ist nur Auslöser)
 - `docs/STATUS.md`: Umsetzungsstand, `docs/RUNBOOK.md`: Inbetriebnahme, `docs/KOSTEN.md`
 

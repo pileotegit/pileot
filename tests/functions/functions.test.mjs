@@ -333,19 +333,28 @@ withDb('Betriebswarnung: höchstens eine Mail pro Tag und Warnkombination', asyn
   assert.equal(resend.sent[0].to[0], 'ops@example.test');
 });
 
-test('Vorlagen: HTML-Escaping, keine Header-Injection, ohne Vorname neutrale Anrede', () => {
+withDb('Vorlagen: HTML-Escaping, keine Header-Injection, ohne Vorname neutrale Anrede', async (c) => {
+  const config = (await c.svc.query('select public.rv_admin_defaults() as d')).rows[0].d;
   const m = renderRequest('initial', {
     studio: 'Studio <b>X</b>\r\nBcc: evil@example.test',
     firstName: '<script>alert(1)</script>',
     clickUrl: 'https://link.example.test/r/?t=abc',
     unsubUrl: 'https://link.example.test/abmelden/?t=abc',
+    config,
   });
   assert.ok(!m.html.includes('<script>'));
   assert.ok(!m.html.includes('<b>X</b>'));
   assert.ok(!/[\r\n]/.test(m.subject));
-  const n = renderRequest('reminder', { studio: 'S', firstName: null, clickUrl: 'https://a/', unsubUrl: 'https://b/' });
+  const n = renderRequest('reminder', { studio: 'S', firstName: null, clickUrl: 'https://a/', unsubUrl: 'https://b/', config });
   assert.match(n.text, /^Hallo,/);
   assert.match(n.text, /letzte Nachricht/);
+  // Auch eigene Texte werden escaped, Platzhalter ersetzt, unbekannte bleiben Text
+  const evil = { ...config, initial_body: '<img src=x onerror=alert(1)> bei {{studio}}', accent_color: 'javascript:alert(1)', initial_button: '"><b>' };
+  const e = renderRequest('initial', { studio: 'Lena', firstName: 'Anna', clickUrl: 'https://a/', unsubUrl: 'https://b/', config: evil });
+  assert.ok(!e.html.includes('<img'));
+  assert.ok(e.html.includes('&lt;img src=x onerror=alert(1)&gt; bei Lena'));
+  assert.ok(e.html.includes('background:#1f2937'), 'ungültige Farbe fällt auf Standard zurück');
+  assert.ok(!e.html.includes('"><b>'));
 });
 
 test('Google-Normalisierung speichert keine Namen und behandelt fehlende Sterne', () => {

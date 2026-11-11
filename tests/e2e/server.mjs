@@ -8,6 +8,8 @@ import { fakeResend, makeDeps } from '../functions/fakes.mjs';
 import { handler as click } from '../../supabase/functions/rv-click/handler.ts';
 import { handler as unsub } from '../../supabase/functions/rv-unsubscribe/handler.ts';
 import { handler as jobs } from '../../supabase/functions/rv-jobs/handler.ts';
+import { handler as adminH } from '../../supabase/functions/rv-admin/handler.ts';
+import { handler as ingestH } from '../../supabase/functions/rv-ingest/handler.ts';
 
 const PORT = Number(process.env.E2E_PORT ?? 8787);
 const ORIGIN = `http://127.0.0.1:${PORT}`;
@@ -54,9 +56,13 @@ const server = http.createServer(async (req, res) => {
       (select status || ':' || coalesce(end_reason,'') from review.campaigns limit 1) camp`)).rows[0];
     res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(s));
   }
+  if (url.pathname === '/__campaigns') {
+    const n = (await c.query('select count(*)::int n from review.campaigns')).rows[0].n;
+    res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ n }));
+  }
   if (url.pathname.startsWith('/functions/v1/')) {
     const name = url.pathname.split('/')[3];
-    const h = { 'rv-click': click, 'rv-unsubscribe': unsub }[name];
+    const h = { 'rv-click': click, 'rv-unsubscribe': unsub, 'rv-admin': adminH, 'rv-ingest': ingestH }[name];
     if (!h) { res.writeHead(404); return res.end(); }
     const chunks = []; for await (const ch of req) chunks.push(ch);
     const body = chunks.length ? Buffer.concat(chunks) : undefined;
@@ -76,6 +82,6 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, '127.0.0.1', () => {
   const click = mail.text.match(/http:\/\/127\.0\.0\.1:\d+\/r\/\?t=[0-9a-f]{64}/)[0];
   const unsubUrl = mail.text.match(/http:\/\/127\.0\.0\.1:\d+\/abmelden\/\?t=[0-9a-f]{64}/)[0];
-  console.log(JSON.stringify({ ready: true, click, unsub: unsubUrl, campaign: ing.campaign_id, db }));
+  console.log(JSON.stringify({ ready: true, click, unsub: unsubUrl, campaign: ing.campaign_id, db, admin_secret: deps.env.ADMIN_SECRET }));
 });
 process.on('SIGTERM', async () => { server.close(); await c.end(); await svc.end(); process.exit(0); });

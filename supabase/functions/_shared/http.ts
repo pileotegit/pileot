@@ -26,14 +26,14 @@ export function redirect(location: string, status = 303): Response {
 }
 
 /** CORS nur für die konfigurierten Origins der statischen Seiten. */
-export function corsHeaders(req: Request, env: Env): Record<string, string> {
+export function corsHeaders(req: Request, env: Env, allowHeaders = 'content-type'): Record<string, string> {
   const origin = req.headers.get('origin');
   const allowed = (env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   if (!origin || !allowed.includes(origin)) return {};
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'POST, OPTIONS',
-    'access-control-allow-headers': 'content-type',
+    'access-control-allow-headers': allowHeaders,
     'access-control-max-age': '600',
     vary: 'origin',
   };

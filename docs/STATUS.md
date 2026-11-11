@@ -9,7 +9,7 @@ die echten Handler (Provider simuliert). **live** = in Supabase/Resend/Google ge
 
 | Teil | gebaut | lokal getestet | live | Blocker |
 |---|---|---|---|---|
-| Datenmodell, RLS, Rechte (3 Migrationen) | ja | ja | nein | Supabase-Zugriff |
+| Datenmodell, RLS, Rechte (4 Migrationen) | ja | ja | nein | Supabase-Zugriff |
 | Abschluss aufnehmen (`rv-ingest`, Workflow A) | ja | ja | nein | Supabase, n8n-Credentials |
 | Versand (`rv-jobs send`, Workflow B, Vorlagen v1) | ja | ja (Resend simuliert) | nein | Resend-Domain, Supabase |
 | Provider-Webhooks (`rv-resend-webhook`) | ja | ja (Svix-Signatur echt berechnet) | nein | Resend-Webhook |
@@ -18,9 +18,12 @@ die echten Handler (Provider simuliert). **live** = in Supabase/Resend/Google ge
 | Google-Abgleich (`rv-jobs google-sync`, Workflow D) | ja | ja (Fixtures) | nein | Google-API-Freigabe |
 | Wochenbericht (Workflow E) | ja | ja | nein | |
 | Betrieb, Warnmail, Löschfristen (Workflow F) | ja | ja | nein | |
+| Kundenschablone: alle Angaben und Texte pro Kundin in der DB (`rv-admin`, `web/admin`) | ja | ja, auch im Browser | nein | Supabase, Hosting `web/` |
+| Eintragsformular für das Studio (`web/eintragen`) | ja | ja, auch im Browser | nein | Supabase, Hosting `web/` |
+| Livegang-Sperre (Name, Impressum, echte Testmail) | ja | ja | nein | |
 | n8n Workflows A, B, D, E, F | ja, als Entwürfe | Struktur validiert, nicht ausgeführt | nein | Credentials, Aktivierung |
 
-Tests: `npm test` = Typprüfung + 52 Tests, `npm run test:e2e` = Browser-Test. Alle grün.
+Tests: `npm test` = Typprüfung + 63 Tests, `npm run test:e2e` = Browser-Test. Alle grün.
 Zusätzlich Mutationstest am SQL: absichtlich eingebaute Fehler werden von den Tests erkannt.
 
 ## Abnahmekriterien (Masterprompt Abschnitt 12)
@@ -48,11 +51,12 @@ Zusätzlich Mutationstest am SQL: absichtlich eingebaute Fehler werden von den T
 
 ## Was ich nicht selbst erledigen konnte
 
-1. **Supabase-Zugriff:** Tools in dieser Session gesperrt. Migrationen und Functions sind nicht deployt.
-   Weg: `scripts/deploy.sh` oder Supabase-Connector freigeben, dann deploye ich.
+1. **Supabase-Zugriff:** Der Connector bietet nur "Secret setzen", kein Deploy; supabase.co ist aus der
+   Arbeitsumgebung nicht erreichbar. Migrationen und Functions sind nicht deployt.
+   Weg: `npx supabase login`, `link`, `db push`, `functions deploy` (siehe Runbook Schritt 2).
 2. **Resend-Domain `mail.pileot.de`:** nicht angelegt (wartet auf Freigabe, DNS-Zugang nötig).
 3. **n8n-Credentials:** über die Schnittstelle nicht anlegbar. Exakte Werte in `n8n/README.md`.
-4. **Linkdomain `link.pileot.de`:** Host unbekannt.
+4. **Hosting `web/`:** Vercel (`*.vercel.app` reicht, eigene Domain optional).
 5. **Google Business Profile API:** Antrag muss vom Profilinhaber gestellt werden.
 6. **Versandgrundlage:** rechtlich nicht geklärt. Das Formular verlangt eine bestätigte
    Einwilligung; ob das für den konkreten Fall genügt, muss eine Fachperson beurteilen.
@@ -60,6 +64,7 @@ Zusätzlich Mutationstest am SQL: absichtlich eingebaute Fehler werden von den T
 ## Bekannte Grenzen V1
 
 - Höchstens eine Anfrage pro Kundin und Standort, auch bei Folgeterminen.
+- Die Kundenverwaltung pflegt einen Standort pro Kundin (Datenmodell kann mehrere).
 - Ein Job mit Status `unknown` braucht einen manuellen Abgleich (selten, Warnung per Mail).
 - Klickzahlen zeigen geöffnete Bewertungsseiten, nicht abgegebene Bewertungen.
 - Nach dem Klick weiß das System nicht, ob bewertet wurde; Google bietet keine Zuordnung.

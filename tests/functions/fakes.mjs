@@ -31,6 +31,7 @@ export const ENV = {
   RESEND_API_KEY: 're_test_key',
   RESEND_WEBHOOK_SECRET: 'whsec_' + Buffer.from('test-webhook-secret-0123456789abcdef').toString('base64'),
   WORKER_SECRET: 'w'.repeat(40),
+  ADMIN_SECRET: 'a'.repeat(40),
   OPS_ALERT_EMAIL: 'ops@example.test',
   OPS_SENDER: '"PILEOT System" <system@mail.example.test>',
 };

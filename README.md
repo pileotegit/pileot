@@ -28,9 +28,9 @@ n8n D: Google-Abgleich · n8n E: Wochenbericht · n8n F: Betriebsprüfung und L�
 | Pfad | Inhalt |
 |---|---|
 | `supabase/migrations/` | Schema, Sicherheit, alle Fachfunktionen (`public.rv_*`) |
-| `supabase/functions/` | Edge Functions `rv-ingest`, `rv-jobs`, `rv-click`, `rv-unsubscribe`, `rv-resend-webhook` |
+| `supabase/functions/` | Edge Functions `rv-ingest`, `rv-jobs`, `rv-click`, `rv-unsubscribe`, `rv-resend-webhook`, `rv-admin` (Kundenverwaltung) |
 | `supabase/functions/_shared/templates.ts` | Deutsche E-Mail-Vorlagen v1 (HTML und Text) |
-| `web/` | Statische Seiten für Klick und Abmeldung |
+| `web/` | Statische Seiten: Kundenverwaltung (`admin/`), Eintragsformular (`eintragen/`), Klick (`r/`), Abmeldung (`abmelden/`) |
 | `n8n/` | Workflow-Übersicht, Credentials, SDK-Quelltexte |
 | `tests/` | DB-Tests, Function-Tests, Browser-Test (alles synthetische Daten) |
 | `docs/` | ADR, Runbook, Kosten, Status |
